@@ -466,7 +466,6 @@ class Simulation(JSONable):
         if self.state.goal > 0:
             self.end_round()
             self.begin_round()
-
     def get_team(self,idx):
         if idx==1:
             return self.team1
@@ -474,11 +473,13 @@ class Simulation(JSONable):
             return self.team2
     def stop(self):
         return self._kill or self.state.step >= self.max_steps
-
     def update_round(self):
         self.listeners.update_round(self.team1,self.team2,self.state)
     def begin_round(self):
+        print(self.state._score)
+        score=dict(self.state._score)
         self.state = self.initial_state.copy()
+        self.state._score = score
         self.state.step = len(self.states)
         self.states.append(self.state)
         self.listeners.begin_round(self.team1,self.team2,self.state)

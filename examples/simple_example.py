@@ -1,6 +1,6 @@
-from soccersimulator.strategies  import Strategy
-from soccersimulator.mdpsoccer import SoccerTeam, Simulation
-from soccersimulator.gui import SimuGUI,show_state,show_simu
+from soccersimulator  import Strategy, SoccerAction
+from soccersimulator import SoccerTeam, Simulation
+from soccersimulator import SimuGUI,show_state,show_simu
 
 
 ## Strategie aleatoire
@@ -20,5 +20,3 @@ team2.add("Paul",RandomStrategy())   #Strategie aleatoire
 simu = Simulation(team1,team2)
 #Jouer et afficher la partie
 show_simu(simu)
-#Jouer sans afficher
-simu.start()
