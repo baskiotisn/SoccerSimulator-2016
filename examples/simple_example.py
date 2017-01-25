@@ -1,6 +1,7 @@
-from soccersimulator  import Strategy, SoccerAction
-from soccersimulator import SoccerTeam, Simulation
-from soccersimulator import SimuGUI,show_state,show_simu
+from soccersimulator import Strategy
+from soccersimulatorr import SoccerTeam, Simulation, SoccerAction
+from soccersimulator import show_simu
+from soccersimulator import Vector2D
 
 
 ## Strategie aleatoire

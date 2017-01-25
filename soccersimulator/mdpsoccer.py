@@ -476,7 +476,6 @@ class Simulation(JSONable):
     def update_round(self):
         self.listeners.update_round(self.team1,self.team2,self.state)
     def begin_round(self):
-        print(self.state._score)
         score=dict(self.state._score)
         self.state = self.initial_state.copy()
         self.state._score = score
