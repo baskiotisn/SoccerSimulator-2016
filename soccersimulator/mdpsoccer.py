@@ -323,7 +323,7 @@ class SoccerState(JSONable):
         if nb_players_2 == 3:
             self.states[(2, 0)] = PlayerState(position=Vector2D(rows[3], quarters[1]))
             self.states[(2, 1)] = PlayerState(position=Vector2D(rows[3], quarters[0]))
-            self.states[(2, 1)] = PlayerState(position=Vector2D(rows[3], quarters[2]))
+            self.states[(2, 2)] = PlayerState(position=Vector2D(rows[3], quarters[2]))
         if nb_players_1 == 4:
             self.states[(1, 0)] = PlayerState(position=Vector2D(rows[0], quarters[0]))
             self.states[(1, 1)] = PlayerState(position=Vector2D(rows[0], quarters[2]))
