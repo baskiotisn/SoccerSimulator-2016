@@ -27,9 +27,11 @@ class SoccerAction(JSONable):
     def copy(self):
         return deepcopy(self)
     def to_str(self):
-        return "%s%s" % (self.acceleration, self.shoot)
+        return self.__str__()
     def __str__(self):
-        return self.to_str()
+        return "Acc:%s, Shoot:%s" % (str(self.acceleration), str(self.shoot))
+    def __repr__(self):
+        return "SoccerAction(%s,%s)" % (self.acceleration.__repr__(),self.shoot.__repr__())
     def __eq__(self, other):
         return (other.acceleration == self.acceleration) and (other.shoot == self.shoot)
     def __add__(self, other):
@@ -66,11 +68,14 @@ class Ball(MobileMixin):
             speed_tmp = Vector2D(speed_abs * u_s.x - speed_ortho * u_s.y, speed_abs * u_s.y + speed_ortho * u_s.x)
             speed_tmp += sum_of_shoots
             vitesse = speed_tmp
-        self.vitesse = vitesse.norm_max(settings.maxBallAcceleration)
+        self.vitesse = vitesse.norm_max(settings.maxBallAcceleration).copy()
         self.position += self.vitesse
     def inside_goal(self):
         return (self.position.x <= 0 or self.position.x >= settings.GAME_WIDTH) and abs(self.position.y - (settings.GAME_HEIGHT / 2.)) < settings.GAME_GOAL_HEIGHT / 2.
-
+    def __repr__(self):
+        return "Ball(%s,%s)" % (self.position.__repr__(),self.vitesse.__repr__())
+    def __str__(self):
+        return "Ball: pos: %s, vit: %s" %(str(self.position),str(self.vitesse))
 
 ###############################################################################
 # PlayerState
@@ -79,7 +84,6 @@ class Ball(MobileMixin):
 class PlayerState(MobileMixin):
     """ Represente la configuration d'un joueur : un etat  mobile (position, vitesse), et une action SoccerAction
     """
-    VMAX = settings.maxPlayerSpeed
 
     def __init__(self, **kwargs):
         """
@@ -93,6 +97,11 @@ class PlayerState(MobileMixin):
         self._last_shoot = kwargs.pop('last_shoot', 0)
         self.__dict__.update(kwargs)
 
+    def __str__(self):
+        return "vit: %s, acc:%s, action:%s" %(str(self.position),str(self.acceleration),str(self.action))
+    def __repr__(self):
+        return "PlayerState(position=%s,acceleration=%s,action=%s,last_shoot=%d)" %  \
+                            (self.position.__repr__(),self.acceleration.__repr__(),self.action.__repr__(),self._last_shoot)
     @property
     def acceleration(self):
         """
@@ -185,6 +194,13 @@ class SoccerState(JSONable):
         self.max_steps = kwargs.pop('max_steps', settings.MAX_GAME_STEPS)
         self._goal = kwargs.pop('goal', 0)
         self.__dict__.update(kwargs)
+
+    def __str__(self):
+        return ("Step: %d, %s " %(self.step,str(self.ball)))+\
+               " ".join("(%d,%d):%s" %(k[0],k[1],str(p)) for k,p in sorted(self.states.items()))+\
+               (" score : %d-%d" %(self.score_team1,self.score_team2))
+    def __repr__(self):
+        return self.__str__()
 
     def to_dict(self):
         return dict(states=dict( [("_dic_m",0)]+[(k.__repr__(),v) for k,v in self.states.items()]),
@@ -333,6 +349,10 @@ class Player(JSONable):
         self.strategy = strategy
     def to_dict(self):
         return dict(name=self.name)
+    def __str__(self):
+        return "%s, %s" %(self.name,str(self.strategy))
+    def __repr__(self):
+        return self.__str__()
 
 class SoccerTeam(JSONable):
     """ Equipe de foot. Comporte une  liste ordonnee de  Player.
@@ -348,6 +368,11 @@ class SoccerTeam(JSONable):
 
     def __iter__(self):
         return iter(self.players)
+
+    def __str__(self):
+        return str(self.name)+": "+" ".join(str(p) for p in self.players)
+    def __repr__(self):
+        return self.__str__()
 
     def add(self,name,strategy):
         self.players.append(Player(name,strategy))

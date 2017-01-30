@@ -186,10 +186,10 @@ class Vector2D(JSONable):
         """
         n_old = self.norm
         if n_old == 0:
-            return Vector2D()
+            return self
         if n_old <= n:
-            return self.copy()
-        return self * n / n_old
+            return self
+        return self.scale(n*1./n_old)
 
     def copy(self):
         """ operateur de copie
@@ -245,7 +245,7 @@ class Vector2D(JSONable):
         return res
 
     def __repr__(self):
-        return self.__str__()
+        return "Vector2D(%f,%f)" % (self.x,self.y)
     def __str__(self):
         return "(%f,%f)" % (self.x, self.y)
     def to_dict(self):
@@ -318,7 +318,6 @@ class Vector2D(JSONable):
 class MobileMixin(JSONable):
     """ Mixin pour représenter un objet mobile. Dispose d'un vecteur position et d'un vecteur vitesse.
     """
-    VMAX = 1000
     def __init__(self, position=None, vitesse=None, *args, **kwargs):
         """
         :param position: position du mobile (Vector2D)
@@ -331,19 +330,15 @@ class MobileMixin(JSONable):
             vitesse = Vector2D()
         self._position = position
         self._vitesse = vitesse
-
     @property
     def vitesse(self):
-        return self._vitesse.norm_max(self.VMAX)
-
+        return self._vitesse
     @vitesse.setter
     def vitesse(self, v):
         self._vitesse.set(v)
-
     @property
     def position(self):
         return self._position
-
     @position.setter
     def position(self, v):
         self._position.set(v)
@@ -370,10 +365,8 @@ class MobileMixin(JSONable):
         :return:
         """
         return cls(x=Vector2D.strg["x"])
-
     def __str__(self):
-        return "%s%s" % (self.position, self.vitesse)
-
+        return "%s,%s" % (self.position, self.vitesse)
     def __repr__(self):
         return self.__str__()
     def to_dict(self):
