@@ -218,9 +218,6 @@ class Vector2D(object):
         res.random(low, high)
         return res
 
-    def to_dict(self):
-        return dict([(k,fmt(v)) for k,v in obj.__dict__.items()])
-
     def __repr__(self):
         return "Vector2D(%f,%f)" % (self.x,self.y)
     def __str__(self):
