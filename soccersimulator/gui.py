@@ -136,10 +136,8 @@ class SimuGUI(pyglet.window.Window):
 
     def _increase_fps(self):
         self._fps = min(self._fps + FPS_MOD, 200)
-        print(self._fps)
     def _decrease_fps(self):
         self._fps = max(self._fps - FPS_MOD, 1)
-        print(self._fps)
     def on_draw(self):
         self.draw()
 

@@ -5,6 +5,7 @@ import random
 import json
 from . import settings
 import zlib
+import base64
 valid_chars = frozenset("%s%s%s" % (string.ascii_letters, string.digits, "_"))
 
 def fmt(x):
@@ -15,8 +16,25 @@ def clean_fn(fn):
     return ''.join(c if c in valid_chars else '' for c in fn)
 
 
-class MyJSONEncoder(json.JSONEncoder):
+def to_json(obj):
+    return json.dumps(obj,cls = MyJSONEncoder,ensure_ascii=False,encoding="utf-8")
+def from_json(strg):
+    return json.loads(strg,cls=MyJSONDecoder)
+def from_jsonz(strg):
+    return from_json(zlib.decompress(base64.b64decode(strg)))
+def to_jsonz(obj):
+    return base64.b64encode(zlib.compress(to_json(obj)))
+def dump_jsonz(obj,fname):
+    with open(fname,"w") as f:
+        f.write(to_jsonz(obj))
+def load_jsonz(fname):
+    with open(fname,"r") as f:
+        return from_jsonz(f.read())
 
+def dict_to_json(obj):
+    return dict( [("_dic_m",0)]+[(k.__repr__(),v) for k,v in obj.items()])
+
+class MyJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if hasattr(obj,'to_dict'):
             tmp = obj.to_dict()
@@ -24,18 +42,16 @@ class MyJSONEncoder(json.JSONEncoder):
             return tmp
         return json.JSONEncoder.default(self, obj)
 
-
 class MyJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
-
     def object_hook(self, obj):
         if '__class__' in obj:
             class_name = obj.pop('__class__')
             module_name = obj.pop('__module__')
             module = __import__(module_name)
             class_ = getattr(module, class_name)
-            args = dict( (key, value) for key, value in obj.items())
+            args = dict((key, value) for key, value in obj.items())
             inst = class_(**args)
             return inst
         if '_dic_m' in obj:
@@ -43,24 +59,8 @@ class MyJSONDecoder(json.JSONDecoder):
             return dict([(eval(k),v) for k,v in obj.items()])
         return obj
 
-class JSONable(object):
-    def to_dict(self):
-        return dict([(k,fmt(v)) for k,v in self.__dict__.items()])
-    def to_json(self):
-        return json.dumps(self,cls = MyJSONEncoder)
-    @staticmethod
-    def from_json(strg):
-        return json.loads(strg,cls=MyJSONDecoder)
 
-def dump(obj,fname):
-    with open(fname,"w") as f:
-        f.write(zlib.compress(obj.to_json()))
-def load(fname):
-    with open(fname,"r") as f:
-        return JSONable.from_json(zlib.decompress(f.read()))
-
-
-class Vector2D(JSONable):
+class Vector2D(object):
     """ Vecteur 2D : peut etre creer soit par ses coordonnees (x,y) soit par ses coordonnees polaire
     angle et norme.
     """
@@ -218,31 +218,8 @@ class Vector2D(JSONable):
         res.random(low, high)
         return res
 
-    @classmethod
-    def from_str(cls, strg):
-        """ Cree un vecteur a partir de la representation texte (x,y)
-        :param strg: representation texte
-        :return: vecteur
-        """
-        l_pos = strg.split(",")
-        if len(l_pos) != 2 or l_pos[0][0] != "(" or l_pos[1][-1] != ")":
-            raise DecodeException("Wrong format for %s : %s", (cls, strg))
-        return cls(float(l_pos[0][1:]), float(l_pos[1][:-1]))
-
-    @classmethod
-    def from_list_str(cls, strg):
-        """ Cree une liste de vecteur a partir de la representation texte (x1,y1)(x2,y2)...
-        :param strg: representation texte
-        :return: vecteur
-        """
-        res = []
-        idx = 0
-        nidx = strg.find(")", idx)
-        while nidx != -1:
-            res.append(cls.from_str(strg[idx:(nidx + 1)]))
-            idx = nidx + 1
-            nidx = strg.find(")", idx)
-        return res
+    def to_dict(self):
+        return dict([(k,fmt(v)) for k,v in obj.__dict__.items()])
 
     def __repr__(self):
         return "Vector2D(%f,%f)" % (self.x,self.y)
@@ -315,7 +292,7 @@ class Vector2D(JSONable):
     def __truediv__(self,other):
         return self.__div__(other)
 
-class MobileMixin(JSONable):
+class MobileMixin(object):
     """ Mixin pour représenter un objet mobile. Dispose d'un vecteur position et d'un vecteur vitesse.
     """
     def __init__(self, position=None, vitesse=None, *args, **kwargs):
@@ -342,29 +319,6 @@ class MobileMixin(JSONable):
     @position.setter
     def position(self, v):
         self._position.set(v)
-
-    @classmethod
-    def from_position(cls, x, y):
-        """ Construit a partir de deux reels (x,y)
-        :param x:
-        :param y:
-        :return:
-        """
-        return cls(position=Vector2D(x, y))
-
-    def to_str(self):
-        """
-        :return: representation texte du mobile
-        """
-        return self.__str__()
-
-    @classmethod
-    def from_json(cls, strg):
-        """ Construit le mobile a partir de la description texte
-        :param strg:
-        :return:
-        """
-        return cls(x=Vector2D.strg["x"])
     def __str__(self):
         return "%s,%s" % (self.position, self.vitesse)
     def __repr__(self):

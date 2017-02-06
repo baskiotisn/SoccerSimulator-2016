@@ -4,9 +4,10 @@ import threading
 from collections import namedtuple
 from threading import Lock
 from copy import deepcopy
-from .utils import Vector2D, MobileMixin, JSONable
+from .utils import Vector2D, MobileMixin
 from .events import SoccerEvents
 from . import settings
+from .utils import dict_to_json
 import random
 import time
 import zipfile
@@ -18,7 +19,7 @@ import traceback
 ###############################################################################
 
 
-class SoccerAction(JSONable):
+class SoccerAction(object):
     """ Action d'un joueur : comporte un vecteur acceleration et un vecteur shoot.
     """
     def __init__(self, acceleration=None, shoot=None):
@@ -46,6 +47,8 @@ class SoccerAction(JSONable):
         self.acceleration -= other.acceleration
         self.shoot -= other.shoot
         return self
+    def to_dict(self):
+        return {"acceleration":self.acceleration,"shoot":self.shoot}
 
 ###############################################################################
 # Ball
@@ -53,7 +56,6 @@ class SoccerAction(JSONable):
 class Ball(MobileMixin):
     def __init__(self,*args,**kwargs):
         MobileMixin.__init__(self,*args,**kwargs)
-
     def next(self,sum_of_shoots):
         vitesse = self.vitesse.copy()
         vitesse.norm = self.vitesse.norm - settings.ballBrakeSquare * self.vitesse.norm ** 2 - settings.ballBrakeConstant * self.vitesse.norm
@@ -84,7 +86,6 @@ class Ball(MobileMixin):
 class PlayerState(MobileMixin):
     """ Represente la configuration d'un joueur : un etat  mobile (position, vitesse), et une action SoccerAction
     """
-
     def __init__(self, **kwargs):
         """
         :param position: position du  joueur
@@ -94,36 +95,33 @@ class PlayerState(MobileMixin):
         """
         MobileMixin.__init__(self,kwargs.pop('position',Vector2D()),kwargs.pop('vitesse',Vector2D()))
         self.action = kwargs.pop('action', SoccerAction())
-        self._last_shoot = kwargs.pop('last_shoot', 0)
+        self.last_shoot = kwargs.pop('last_shoot', 0)
         self.__dict__.update(kwargs)
-
+    def to_dict(self):
+        return {"position":self.position,"vitesse":self.vitesse,"action":self.action,"last_shoot":self.last_shoot}
     def __str__(self):
         return "vit: %s, acc:%s, action:%s" %(str(self.position),str(self.acceleration),str(self.action))
     def __repr__(self):
         return "PlayerState(position=%s,acceleration=%s,action=%s,last_shoot=%d)" %  \
-                            (self.position.__repr__(),self.acceleration.__repr__(),self.action.__repr__(),self._last_shoot)
+                            (self.position.__repr__(),self.acceleration.__repr__(),self.action.__repr__(),self.last_shoot)
     @property
     def acceleration(self):
         """
         :return: Vector2D Action acceleration du joueur
         """
         return self.action.acceleration.norm_max(settings.maxPlayerAcceleration)
-
     @acceleration.setter
     def acceleration(self,v):
         self.action.acceleration = v
-
     @property
     def shoot(self):
         """ Vector2D Action shoot du joueur
         :return:
         """
         return self.action.shoot.norm_max(settings.maxPlayerShoot)
-
     @shoot.setter
     def shoot(self,v):
         self.action.shoot = v
-
     def next(self, ball, action=None):
         """ Calcul le prochain etat en fonction de l'action et de la position de la balle
         :param ball:
@@ -149,7 +147,6 @@ class PlayerState(MobileMixin):
         if self.position.distance(ball.position) > (settings.PLAYER_RADIUS + settings.BALL_RADIUS):
             return Vector2D()
         return self._rd_angle(self.shoot,(self.vitesse.angle-self.shoot.angle),self.position.distance(ball.position)/(settings.PLAYER_RADIUS+settings.BALL_RADIUS))
-
     @staticmethod
     def _rd_angle(shoot,dangle,dist):
         eliss = lambda x, alpha: (math.exp(alpha*x)-1)/(math.exp(alpha)-1)
@@ -161,19 +158,15 @@ class PlayerState(MobileMixin):
         norm_prc = 1-0.3*dist_factor*dangle_factor
         return Vector2D(norm=shoot.norm*norm_prc,
                         angle=shoot.angle+2*(random.random()-0.5)*angle_prc)
-
     def can_shoot(self):
         """ Le joueur peut-il shooter
         :return:
         """
-        return self._last_shoot <= 0
-
+        return self.last_shoot <= 0
     def _dec_shoot(self):
-        self._last_shoot -= 1
-
+        self.last_shoot -= 1
     def _reset_shoot(self):
-        self._last_shoot = settings.nbWithoutShoot
-
+        self.last_shoot = settings.nbWithoutShoot
     def copy(self):
         return deepcopy(self)
 
@@ -181,7 +174,7 @@ class PlayerState(MobileMixin):
 # SoccerState
 ###############################################################################
 
-class SoccerState(JSONable):
+class SoccerState(object):
     """ Etat d'un tour du jeu. Contient la balle, l'ensemble des etats des joueurs, le score et
     le numero de l'etat.
     """
@@ -189,10 +182,10 @@ class SoccerState(JSONable):
         self.states = kwargs.pop('states', dict())
         self.strategies = kwargs.pop('strategies',dict())
         self.ball = kwargs.pop('ball', Ball())
-        self._score = kwargs.pop('score', {"1": 0, "2": 0})
+        self.score = kwargs.pop('score', {"1": 0, "2": 0})
         self.step = kwargs.pop('step', 0)
         self.max_steps = kwargs.pop('max_steps', settings.MAX_GAME_STEPS)
-        self._goal = kwargs.pop('goal', 0)
+        self.goal = kwargs.pop('goal', 0)
         self.__dict__.update(kwargs)
 
     def __str__(self):
@@ -203,10 +196,10 @@ class SoccerState(JSONable):
         return self.__str__()
 
     def to_dict(self):
-        return dict(states=dict( [("_dic_m",0)]+[(k.__repr__(),v) for k,v in self.states.items()]),
-                strategies=dict([('_dic_m',0)]+[(k.__repr__(),v) for k,v in self.strategies.items()]),
-                ball=self.ball,score=self._score,step=self.step,
-                max_steps=self.max_steps,goal=self._goal)
+        return dict(states=dict_to_json(self.states),
+                strategies=dict_to_json( self.strategies),
+                ball=self.ball,score=dict_to_json(self.score),step=self.step,
+                max_steps=self.max_steps,goal=self.goal)
     def player_state(self, id_team, id_player):
         """ renvoie la configuration du joueur
         :param id_team: numero de la team du joueur
@@ -234,7 +227,7 @@ class SoccerState(JSONable):
         :param idx: numero de la team
         :return:
         """
-        return self._score[str(idx)]
+        return self.score[str(idx)]
 
     @property
     def score_team1(self):
@@ -244,13 +237,6 @@ class SoccerState(JSONable):
     def score_team2(self):
         return self.get_score_team(2)
 
-    @property
-    def goal(self):
-        """
-        :return: id de la team qui vient de marquer le but, 0 sinon
-        """
-        return self._goal
-
     def copy(self):
         return deepcopy(self)
 
@@ -258,7 +244,7 @@ class SoccerState(JSONable):
     def apply_actions(self, actions=None,strategies=None):
         if strategies: self.strategies.update(strategies)
         sum_of_shoots = Vector2D()
-        self._goal = 0
+        self.goal = 0
         if actions:
             for k, c in self.states.items():
                 if k in actions:
@@ -283,8 +269,8 @@ class SoccerState(JSONable):
 
 
     def _do_goal(self, idx):
-        self._score[str(idx)]+=1
-        self._goal = idx
+        self.score[str(idx)]+=1
+        self.goal = idx
 
 
     @classmethod
@@ -334,8 +320,8 @@ class SoccerState(JSONable):
             self.states[(2, 1)] = PlayerState(position=Vector2D(rows[3], quarters[2]))
             self.states[(2, 2)] = PlayerState(position=Vector2D(rows[2], quarters[0]))
             self.states[(2, 3)] = PlayerState(position=Vector2D(rows[2], quarters[2]))
-        self.ball = Ball.from_position(settings.GAME_WIDTH / 2, settings.GAME_HEIGHT / 2)
-        self._goal = 0
+        self.ball = Ball(Vector2D(settings.GAME_WIDTH / 2, settings.GAME_HEIGHT / 2),Vector2D())
+        self.goal = 0
 
 
 
@@ -343,18 +329,20 @@ class SoccerState(JSONable):
 # SoccerTeam
 ###############################################################################
 
-class Player(JSONable):
+class Player(object):
     def __init__(self,name=None,strategy=None):
         self.name = name or ""
         self.strategy = strategy
     def to_dict(self):
         return dict(name=self.name)
     def __str__(self):
-        return "%s, %s" %(self.name,str(self.strategy))
+        return "%s (%s)" %(self.name,str(self.strategy))
     def __repr__(self):
         return self.__str__()
+    def to_dict(self):
+        return {"name":self.name,"strategy":self.strategy.__repr__()}
 
-class SoccerTeam(JSONable):
+class SoccerTeam(object):
     """ Equipe de foot. Comporte une  liste ordonnee de  Player.
     """
 
@@ -366,11 +354,13 @@ class SoccerTeam(JSONable):
         """
         self.name, self.players, self.login = name or "", players or [], login or ""
 
+    def to_dict(self):
+        return {"name":self.name,"players":self.players,"login":self.login}
     def __iter__(self):
         return iter(self.players)
 
     def __str__(self):
-        return str(self.name)+": "+" ".join(str(p) for p in self.players)
+        return str(self.name)+"("+self.login+")"+": "+" ".join(str(p) for p in self.players)
     def __repr__(self):
         return self.__str__()
 
@@ -430,7 +420,7 @@ class SoccerTeam(JSONable):
 ###############################################################################
 
 
-class Simulation(JSONable):
+class Simulation(object):
     def __init__(self,team1=None,team2=None, max_steps = settings.MAX_GAME_STEPS,state=None,**kwargs):
         self.team1, self.team2 = team1 or SoccerTeam(),team2 or SoccerTeam()
         self.state = state or SoccerState.create_initial_state(self.team1.nb_players,self.team2.nb_players)
@@ -442,18 +432,24 @@ class Simulation(JSONable):
         self._kill = False
         self.initial_state = self.state.copy()
         self.states = []
+        self.error = False
+        self.replay = type(self.team1.strategy(0))==str or type(self.team1.strategy(0)) == unicode
         for s in self.team1.strategies + self.team2.strategies:
             self.listeners += s
         self.__dict__.update(kwargs)
 
     def reset(self):
-        self.states = []
-        self.state = self.initial_state.copy()
+        self.replay = type(self.team1.strategy(0))==str or type(self.team1.strategy(0)) == unicode
         self._thread = None
         self._kill = False
         self._on_going = False
+        if self.replay:
+            return
+        self.states = []
+        self.state = self.initial_state.copy()
+        self.error = False
     def to_dict(self):
-        return dict(team1=self.team1,team2=self.team2,state=self.state,max_steps=self.max_steps,states=self.states)
+        return dict(team1=self.team1,team2=self.team2,state=self.state,max_steps=self.max_steps,states=self.states,initial_state=self.initial_state)
 
     def start_thread(self):
         if not self._thread or not self._thread.isAlive():
@@ -466,27 +462,42 @@ class Simulation(JSONable):
     def start(self):
         if self._on_going:
             return
+        if self.replay:
+            self.state = self.states[0]
         self.begin_match()
         while not self.stop():
             self.next_step()
         self.end_match()
         self._on_going = False
-        return self.state.score_team1, self.state.score_team2
+        return self
+    @property
+    def step(self):
+        return self.state.step
+    def get_score_team(self,i):
+        return self.state.get_score_team(i)
     def next_step(self):
-        actions=dict()
-        strategies=dict()
-        for i,t in enumerate([self.team1,self.team2]):
-            try:
-                actions.update(t.compute_strategies(self.state, i+1))
-                strategies.update(dict([((i,j),s.name) for j,s in enumerate(t.strategies)]))
-            except Exception as e:
-                time.sleep(0.0001)
-                print(e, traceback.print_exc())
-                self.state.step=self.max_steps
-                self.state._score[2-i]=100
-                print("Error for team %d -- loose match" % ((i+1),))
-        self.state.apply_actions(actions,strategies)
-        self.states.append(self.state.copy())
+        if self.stop():
+            return
+        if  self.replay:
+            self.state = self.states[self.state.step+1]
+        else:
+            actions=dict()
+            strategies=dict()
+            for i,t in enumerate([self.team1,self.team2]):
+                try:
+                    actions.update(t.compute_strategies(self.state, i+1))
+                    strategies.update(dict([((i,j),s.name) for j,s in enumerate(t.strategies)]))
+                except Exception as e:
+                    time.sleep(0.0001)
+                    print(e, traceback.print_exc())
+                    self.state.step=self.max_steps
+                    self.state.score[2-i]=100
+                    self.error = True
+                    print("Error for team %d -- loose match" % ((i+1),))
+                    self.states.append(self.state.copy())
+                    return
+            self.state.apply_actions(actions,strategies)
+            self.states.append(self.state.copy())
         self.update_round()
         if self.state.goal > 0:
             self.end_round()
@@ -497,24 +508,26 @@ class Simulation(JSONable):
         if idx == 2:
             return self.team2
     def stop(self):
-        return self._kill or self.state.step >= self.max_steps
+        return self._kill or self.state.step >= self.max_steps or (self.replay and self.step+1>=len(self.states))
     def update_round(self):
         self.listeners.update_round(self.team1,self.team2,self.state)
     def begin_round(self):
-        score=dict(self.state._score)
-        self.state = self.initial_state.copy()
-        self.state._score = score
-        self.state.step = len(self.states)
-        self.states.append(self.state)
+        if not self.replay:
+            score=dict(self.state.score)
+            self.state = self.initial_state.copy()
+            self.state.score = score
+            self.state.step = len(self.states)
+            self.states.append(self.state.copy())
         self.listeners.begin_round(self.team1,self.team2,self.state)
     def end_round(self):
         self.listeners.end_round(self.team1, self.team2, self.state)
     def begin_match(self):
-        self.reset()
         self._on_going = True
         self.listeners.begin_match(self.team1,self.team2,self.state)
         self.begin_round()
     def end_match(self):
         self.listeners.end_match(self.team1,self.team2,self.state)
+        self.replay = True
+        #self.state = self.states[0]
     def send_strategy(self,key):
         self.listeners.send_strategy(key)
