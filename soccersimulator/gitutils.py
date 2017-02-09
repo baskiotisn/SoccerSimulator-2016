@@ -5,7 +5,7 @@ import shutil
 import argparse
 import pickle
 from collections import namedtuple
-
+import traceback
 Groupe = namedtuple("Groupe",["login","projet","noms"])
 
 def dl_from_github(groupe, path):
@@ -30,7 +30,7 @@ def check_date(groupe, path):
               (os.path.join(path, groupe.login),))
 
 
-def load_teams(path,login):
+def load_teams(path,login,nbps):
     mymod = None
     if not os.path.exists(os.path.join(path,login,"__init__.py")):
         print("\033[93m Erreur pour \033[94m%s : \033[91m%s \033[0m" % (login, "__init__.py non trouve"))
@@ -44,31 +44,45 @@ def load_teams(path,login):
         del sys.path[0]
     if mymod is None:
         return None
-    teams = {1:[],2:[],4:[]}
-
-    if hasattr(mymod,"team1"):
-        teams[1].append(mymod.team1)
-    if hasattr(mymod,"team2"):
-        teams[2].append(mymod.team2)
-    if hasattr(mymod,"team4"):
-        teams[4].append(mymod.team4)
-    for t_list in teams.values():
-        for t in t_list:
-            t.login = login
-    print("Equipe de \033[92m%s\033[0m charge, \033[92m%s equipes\033[0m" % (login, sum([len(x) for x in teams.values()])))
+    teams = dict()#{1:[],2:[],4:[]}
+    try:
+        if hasattr(mymod,"get_team"):
+            for nbp in nbps:
+                teams[nbp] = mymod.get_team(nbp)
+    except Exception as e:
+        print(traceback.print_exc())
+    #if hasattr(mymod,"team1"):
+    #    teams[1].append(mymod.team1)
+    #if hasattr(mymod,"team2"):
+    #    teams[2].append(mymod.team2)
+    #if hasattr(mymod,"team4"):
+    #    teams[4].append(mymod.team4)
+    for nbp,t in teams.items():
+        if t is None or not hasattr(t,"nb_players"):
+            print("\033[93m Pas d'equipe a %d joueurs pour \033[94m%s\033[0m" % (nbp,login))
+            del teams[nbp]
+            continue
+        if t.nb_players != nbp:
+            print("\033[93m Erreur pour \033[94m%s : \033[0m mauvais nombre de joueurs (%d au lieu de %d)"\
+                        % (login, t.nb_players, nbp))
+            del teams[nbp]
+            continue
+        t.login = login
+    print("Equipe de \033[92m%s\033[0m charge, \033[92m%s equipes\033[0m" % (login, len(teams)))
     return teams
 
 
 
-def import_directory(path,logins = None):
-    teams = {1:[],2:[],4:[]}
+def import_directory(path,nbps,logins = None):
+    teams = dict()
+    for i in nbps:
+        teams[i] = []
     path = os.path.realpath(path)
     logins = [login for login in os.listdir(path)
               if os.path.isdir(os.path.join(path, login)) and (logins is None or login in logins)]
     for l in sorted(logins):
-        tmp=load_teams(path,l)
+        tmp=load_teams(path,l,nbps)
         if tmp is not None:
-            teams[1]+=tmp[1]
-            teams[2]+=tmp[2]
-            teams[4]+=tmp[4]
+            for nbp in tmp.keys():
+                teams[nbp].append(tmp[nbp])
     return teams

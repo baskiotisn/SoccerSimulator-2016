@@ -182,7 +182,7 @@ class SoccerState(object):
         self.states = kwargs.pop('states', dict())
         self.strategies = kwargs.pop('strategies',dict())
         self.ball = kwargs.pop('ball', Ball())
-        self.score = kwargs.pop('score', {"1": 0, "2": 0})
+        self.score = kwargs.pop('score', {1: 0, 2: 0})
         self.step = kwargs.pop('step', 0)
         self.max_steps = kwargs.pop('max_steps', settings.MAX_GAME_STEPS)
         self.goal = kwargs.pop('goal', 0)
@@ -227,7 +227,7 @@ class SoccerState(object):
         :param idx: numero de la team
         :return:
         """
-        return self.score[str(idx)]
+        return self.score[idx]
 
     @property
     def score_team1(self):
@@ -269,7 +269,7 @@ class SoccerState(object):
 
 
     def _do_goal(self, idx):
-        self.score[str(idx)]+=1
+        self.score[idx]+=1
         self.goal = idx
 
 
@@ -528,6 +528,5 @@ class Simulation(object):
     def end_match(self):
         self.listeners.end_match(self.team1,self.team2,self.state)
         self.replay = True
-        #self.state = self.states[0]
     def send_strategy(self,key):
         self.listeners.send_strategy(key)

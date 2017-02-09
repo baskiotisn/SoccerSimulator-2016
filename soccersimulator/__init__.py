@@ -6,7 +6,7 @@ from .mdpsoccer import  Player, SoccerTeam, Simulation
 from .matches import Score, SoccerTournament
 from .gui import SimuGUI, show_simu, show_state, pyg_start, pyg_stop, pyglet
 from . import  settings
-
+from . import gitutils
 
 __version__ = '1.2017.02.05'
 __project__ = 'soccersimulator'

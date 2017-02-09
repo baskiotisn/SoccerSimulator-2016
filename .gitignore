@@ -1,3 +1,5 @@
+tmp/
+scripts/
 *~
 login216.py
 *.pyc
