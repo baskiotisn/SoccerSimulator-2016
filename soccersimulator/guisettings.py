@@ -1,0 +1,23 @@
+##
+## GUI Constants (color, windows size,... )
+##
+TEAM1_COLOR = [0.9, 0.1, 0.1]
+TEAM2_COLOR = [0.1, 0.1, 0.9]
+FIELD_COLOR = [0.3, 0.9, 0.3]
+BALL_COLOR = [0.4, 0.4, 0.4]
+LINE_COLOR = [1., 1., 1.]
+BG_COLOR = [0., 0., 0.]
+GOAL_COLOR = [0.2, 0.2, 0.2]
+SCALE_NAME = 0.05
+HUD_HEIGHT = 10
+HUD_WIDTH = 0
+HUD_BKG_COLOR = [0.3, 0.3, 0.3]
+HUD_TEAM1_COLOR = [int(x * 255) for x in TEAM1_COLOR] + [200]
+HUD_TEAM2_COLOR = [int(x * 255) for x in TEAM2_COLOR] + [200]
+HUD_TEXT_COLOR = [0, 200, 0, 255]
+MSG_TEXT_COLOR = [200, 200, 200, 255]
+PANEL_WIDTH = 40
+PANEL_BKG_COLOR = [1, 1, 1]
+PANEL_TXT_COLOR = [10, 10, 10, 200]
+PANEL_SCORE_COLOR = [200, 10, 10, 100]
+PANEL_DELTA = 6

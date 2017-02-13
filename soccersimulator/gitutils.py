@@ -6,13 +6,17 @@ import argparse
 import pickle
 from collections import namedtuple
 import traceback
+import logging
+from soccersimulator import SoccerTeam, Strategy, Simulation
+
+MAX_TEST_STEPS = 50
 Groupe = namedtuple("Groupe",["login","projet","noms"])
 
 def dl_from_github(groupe, path):
     if type(groupe)==list:
         for g in groupe: dl_from_github(g,path)
         return
-    print("Debut import github %s %s" % (groupe.login, groupe.projet))
+    logging.info("Debut import github %s %s" % (groupe.login, groupe.projet))
     if not os.path.exists(path):
         os.mkdir(path)
     tmp_path = os.path.join(path, groupe.login)
@@ -30,45 +34,53 @@ def check_date(groupe, path):
               (os.path.join(path, groupe.login),))
 
 
+def check_team(team):
+    teamDefault = SoccerTeam()
+    for nb in range(team.nb_players):
+        teamDefault.add(str(nb),Strategy())
+    if Simulation(team,teamDefault,max_steps=MAX_TEST_STEPS).start().error or \
+            Simulation(teamDefault,team,max_steps=MAX_TEST_STEPS).start().error:
+        return False
+    return True
+
 def load_teams(path,login,nbps):
     mymod = None
     if not os.path.exists(os.path.join(path,login,"__init__.py")):
-        print("\033[93m Erreur pour \033[94m%s : \033[91m%s \033[0m" % (login, "__init__.py non trouve"))
+        logging.info("\033[93m Erreur pour \033[94m%s : \033[91m%s \033[0m" % (login, "__init__.py non trouve"))
         return None
     try:
         sys.path.insert(0, path)
         mymod = __import__(login)
     except Exception as e:
-        print("\033[93m Erreur pour \033[94m%s : \033[91m%s \033[0m" % (login, str(e)))
+        logging.debug(traceback.format_exc())
+        logging.info("\033[93m Erreur pour \033[94m%s : \033[91m%s \033[0m" % (login, e))
     finally:
         del sys.path[0]
     if mymod is None:
         return None
-    teams = dict()#{1:[],2:[],4:[]}
-    try:
-        if hasattr(mymod,"get_team"):
-            for nbp in nbps:
-                teams[nbp] = mymod.get_team(nbp)
-    except Exception as e:
-        print(traceback.print_exc())
-    #if hasattr(mymod,"team1"):
-    #    teams[1].append(mymod.team1)
-    #if hasattr(mymod,"team2"):
-    #    teams[2].append(mymod.team2)
-    #if hasattr(mymod,"team4"):
-    #    teams[4].append(mymod.team4)
-    for nbp,t in teams.items():
-        if t is None or not hasattr(t,"nb_players"):
-            print("\033[93m Pas d'equipe a %d joueurs pour \033[94m%s\033[0m" % (nbp,login))
-            del teams[nbp]
-            continue
-        if t.nb_players != nbp:
-            print("\033[93m Erreur pour \033[94m%s : \033[0m mauvais nombre de joueurs (%d au lieu de %d)"\
-                        % (login, t.nb_players, nbp))
-            del teams[nbp]
-            continue
-        t.login = login
-    print("Equipe de \033[92m%s\033[0m charge, \033[92m%s equipes\033[0m" % (login, len(teams)))
+    teams = dict()
+    if not hasattr(mymod,"get_team"):
+        logging.info("\033[93m Pas de get_team pour \033[94m%s\033[0m" % (login,))
+        return teams
+    for nbp in nbps:
+        try:
+            tmpteam = mymod.get_team(nbp)
+            if tmpteam is None or not hasattr(tmpteam,"nb_players"):
+                logging.info("\033[93m Pas d'equipe a %d joueurs pour \033[94m%s\033[0m" % (nbp,login))
+                continue
+            if tmpteam.nb_players != nbp:
+                logging.info("\033[93m Erreur pour \033[94m%s : \033[0m mauvais nombre de joueurs (%d au lieu de %d)"\
+                    % (login, tmpteam.nb_players, nbp))
+                continue
+            if not check_team(tmpteam):
+                logging.info("\033[93m Error for \033[91m(%s,%d)\033[0m" % (login,nbp))
+                continue
+            tmpteam.login = login
+            teams[nbp] = (tmpteam,mymod.get_team)
+        except Exception as e:
+            logging.debug(traceback.format_exc())
+            logging.info("\033[93m Erreur pour \033[94m%s: \033[91m%s \033[0m" % (login,e))
+    logging.info("Equipes de \033[92m%s\033[0m charge, \033[92m%s equipes\033[0m" % (login, len(teams)))
     return teams
 
 
@@ -78,9 +90,9 @@ def import_directory(path,nbps,logins = None):
     for i in nbps:
         teams[i] = []
     path = os.path.realpath(path)
-    logins = [login for login in os.listdir(path)
-              if os.path.isdir(os.path.join(path, login)) and (logins is None or login in logins)]
-    for l in sorted(logins):
+    logins = [login for login in os.listdir(path)\
+              if os.path.isdir(os.path.join(path,login)) and (logins is None or login in logins)]
+    for l in sorted(logins,key=lambda x : x.lower()):
         tmp=load_teams(path,l,nbps)
         if tmp is not None:
             for nbp in tmp.keys():

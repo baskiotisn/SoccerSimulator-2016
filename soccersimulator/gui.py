@@ -9,6 +9,8 @@ import time
 import traceback
 from . import settings
 from .guiutils import *
+import logging
+from .guisettings import *
 
 FPS = 50.
 FPS_MOD = 5.
@@ -131,7 +133,7 @@ class SimuGUI(pyglet.window.Window):
                 self.hud.draw()
         except Exception as e:
             time.sleep(0.0001)
-            print(e, traceback.print_exc())
+            logging.exception(e, traceback.format_exc())
             raise e
 
     def _increase_fps(self):
@@ -171,7 +173,7 @@ class SimuGUI(pyglet.window.Window):
             gl.glLoadIdentity()
         except Exception as e:
             time.sleep(0.0001)
-            print(e, traceback.print_exc())
+            logging.exception(e, traceback.format_exc())
 
     def on_close(self):
         pyglet.window.Window.on_close(self)

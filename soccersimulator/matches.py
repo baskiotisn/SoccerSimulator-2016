@@ -7,7 +7,7 @@ from .mdpsoccer import Simulation
 from .utils import to_jsonz,dict_to_json,from_jsonz
 from .events import SoccerEvents
 from . import settings
-
+import logging
 ###############################################################################
 # Tournament
 ###############################################################################
@@ -70,9 +70,8 @@ class Score(object):
 
 class SoccerTournament(object):
 
-    def __init__(self, nb_players=None, max_steps=settings.MAX_GAME_STEPS, retour=True,verbose=True,**kwargs):
+    def __init__(self, nb_players=None, max_steps=settings.MAX_GAME_STEPS, retour=True,**kwargs):
         self.nb_players, self.max_steps, self.retour = nb_players, max_steps, retour
-        self.verbose = verbose
         self.matches = kwargs.pop("matches",dict())
         self.teams = kwargs.pop("teams",dict())
         self.scores = kwargs.pop("scores",dict())
@@ -85,7 +84,7 @@ class SoccerTournament(object):
         self._join = True
 
     def to_dict(self):
-        return {"nb_players":self.nb_players, "max_steps":self.max_steps, "retour":self.retour, "verbose":self.verbose,\
+        return {"nb_players":self.nb_players, "max_steps":self.max_steps, "retour":self.retour, \
                     "matches":dict_to_json(self.matches),"scores":dict_to_json(self.scores), "teams":dict_to_json(self.teams)}
 
     def add_team(self, team, score=None):
@@ -176,13 +175,14 @@ class SoccerTournament(object):
             i = self.find_team(i)
         return [from_jsonz(m) for k, m in self.matches.items() if (k[0] == i or k[1] == i) and (m is not None)]
 
-    def format_scores(self):
+    def format_scores(self,with_id=True):
         sc = sorted([(score, i) for i,score  in self.scores.items()], reverse=True)
-        res = ["\033[92m%s\033[0m (\033[93m%s\033[m) : %s" % (self.teams[i].name, self.teams[i].login, str(score)) for score, i in sc]
+        res = ["[%d]   \033[92m%s\033[0m (\033[93m%s\033[m) : %s"\
+                    % (i,self.teams[i].name, self.teams[i].login, str(score)) for score, i in sc]
         return "\033[93m***\033[0m \033[95m Resultats pour le tournoi \033[92m%d joueurs\033[0m : \033[93m***\33[0m \n\t%s\n\n" % \
                (self.nb_teams, "\n\t".join(res))
-    def print_scores(self):
-        print(self.format_scores())
+    def print_scores(self,with_id=False):
+        print(self.format_scores(with_id))
     def __str__(self):
         return "Tournoi %d joueurs,  %d equipes, %d matches" %(self.nb_players,self.nb_teams,self.nb_matches)
     def __repr__(self):
@@ -197,8 +197,7 @@ class SoccerTournament(object):
         self.listeners.end_round(*args, **kwargs)
 
     def begin_match(self, *args, **kwargs):
-        if self.verbose:
-            print("\033[33mDebut match : \033[0m%d/%d : \033[94m%s (%s) \033[0mvs \033[94m%s (%s)\033[0m" % (len(self.played)+1, self.nb_matches,
+        logging.info("\033[33mDebut match : \033[0m%d/%d : \033[94m%s (%s) \033[0mvs \033[94m%s (%s)\033[0m" % (len(self.played)+1, self.nb_matches,
                                                     self.cur_match.get_team(1).name,self.cur_match.get_team(1).login,
                                                     self.cur_match.get_team(2).name,self.cur_match.get_team(2).login))
         self.listeners.begin_match(*args, **kwargs)
@@ -208,25 +207,17 @@ class SoccerTournament(object):
             self.scores[self.cur_i].add(self.cur_match.states[-1].get_score_team(1), self.cur_match.states[-1].get_score_team(2))
             self.scores[self.cur_j].add(self.cur_match.states[-1].get_score_team(2), self.cur_match.states[-1].get_score_team(1))
             self.matches[(self.cur_i,self.cur_j)]=to_jsonz(self.cur_match)
-        if self.verbose:
-            cm1 = cm2 = "\033[37m"
-            if self.cur_match.get_score_team(1)>self.cur_match.get_score_team(2):
-                cm1 = "\033[92m"
-                cm2 = "\033[91m"
-            if self.cur_match.get_score_team(1)<self.cur_match.get_score_team(2):
-                cm1 = "\033[91m"
-                cm2 = "\033[92m"
-            print("\033[93mResultat : %s%s (%s) \033[0mvs %s%s (%s) : %s%d - %s%d\033[0m" % \
-                (cm1,self.cur_match.get_team(1).name, self.cur_match.get_team(1).login,\
-                  cm2,self.cur_match.get_team(2).name, self.cur_match.get_team(2).login, \
-                cm1,self.cur_match.get_score_team(1),cm2, self.cur_match.get_score_team(2)))
+        cm1 = cm2 = "\033[37m"
+        if self.cur_match.get_score_team(1)>self.cur_match.get_score_team(2):
+            cm1 = "\033[92m"
+            cm2 = "\033[91m"
+        if self.cur_match.get_score_team(1)<self.cur_match.get_score_team(2):
+            cm1 = "\033[91m"
+            cm2 = "\033[92m"
+        logging.info("\033[93mResultat : %s%s (%s) \033[0mvs %s%s (%s) : %s%d - %s%d\033[0m" % \
+            (cm1,self.cur_match.get_team(1).name, self.cur_match.get_team(1).login,\
+              cm2,self.cur_match.get_team(2).name, self.cur_match.get_team(2).login, \
+            cm1,self.cur_match.get_score_team(1),cm2, self.cur_match.get_score_team(2)))
         self.listeners.end_match(*args, **kwargs)
         self.cur_match.listeners -= self
         self.cur_i,self.cur_j = -1,-1
-        #if not self.stop():
-        #    self.play_next()
-        #else:
-        #    self._on_going = False
-        #    self._kill = False
-        #    if self.verbose:
-        #        print("Fin tournoi")

@@ -6,28 +6,8 @@ from . import settings
 import math
 import time
 import traceback
-
-TEAM1_COLOR = [0.9, 0.1, 0.1]
-TEAM2_COLOR = [0.1, 0.1, 0.9]
-FIELD_COLOR = [0.3, 0.9, 0.3]
-BALL_COLOR = [0.8, 0.8, 0.2]
-LINE_COLOR = [1., 1., 1.]
-BG_COLOR = [0., 0., 0.]
-GOAL_COLOR = [0.2, 0.2, 0.2]
-SCALE_NAME = 0.05
-HUD_HEIGHT = 10
-HUD_WIDTH = 0
-HUD_BKG_COLOR = [0.3, 0.3, 0.3]
-HUD_TEAM1_COLOR = [int(x * 255) for x in TEAM1_COLOR] + [200]
-HUD_TEAM2_COLOR = [int(x * 255) for x in TEAM2_COLOR] + [200]
-HUD_TEXT_COLOR = [0, 200, 0, 255]
-MSG_TEXT_COLOR = [200, 200, 200, 255]
-PANEL_WIDTH = 40
-PANEL_BKG_COLOR = [1, 1, 1]
-PANEL_TXT_COLOR = [10, 10, 10, 200]
-PANEL_SCORE_COLOR = [200, 10, 10, 100]
-PANEL_DELTA = 6
-
+import logging
+from .guisettings import *
 
 
 def minmax(x, mi=0, ma=1):
@@ -66,7 +46,7 @@ class ObjectSprite(MobileMixin):
                 p.draw()
         except Exception as e:
             time.sleep(0.0001)
-            print(e, traceback.print_exc())
+            logging.exception(e, traceback.format_exc())
         finally:
             gl.glPopMatrix()
 
@@ -160,7 +140,7 @@ class TextSprite(object):
         try:
             self._label = pyglet.text.Label(text, color=color, font_name="Arial", font_size=40)
         except Exception as e:
-            print(e, traceback.print_exc())
+            logging.exception(e, traceback.format_exc())
             time.sleep(0.0001)
             raise e
         self.scale = scale
@@ -174,7 +154,7 @@ class TextSprite(object):
             gl.glScalef(self.scale, self.scale, 1)
             self._label.draw()
         except Exception as e:
-            print(e, traceback.print_exc())
+            logging.exception(e, traceback.format_exc())
             time.sleep(0.0001)
             raise e
         finally:

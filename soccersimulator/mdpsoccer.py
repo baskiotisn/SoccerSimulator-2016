@@ -12,7 +12,7 @@ import random
 import time
 import zipfile
 import traceback
-
+import logging
 
 ###############################################################################
 # SoccerAction
@@ -22,17 +22,19 @@ import traceback
 class SoccerAction(object):
     """ Action d'un joueur : comporte un vecteur acceleration et un vecteur shoot.
     """
-    def __init__(self, acceleration=None, shoot=None):
+    def __init__(self, acceleration=None, shoot=None,name=None):
         self.acceleration = acceleration or Vector2D()
         self.shoot = shoot or Vector2D()
+        self.name = name or ""
     def copy(self):
         return deepcopy(self)
-    def to_str(self):
-        return self.__str__()
+    def set_name(self,name):
+        self.name = name
+        return self
     def __str__(self):
-        return "Acc:%s, Shoot:%s" % (str(self.acceleration), str(self.shoot))
+        return "Acc:%s, Shoot:%s, Name:%s" % (str(self.acceleration), str(self.shoot), str(self.name))
     def __repr__(self):
-        return "SoccerAction(%s,%s)" % (self.acceleration.__repr__(),self.shoot.__repr__())
+        return "SoccerAction(%s,%s,%s)" % (self.acceleration.__repr__(),self.shoot.__repr__(),self.name)
     def __eq__(self, other):
         return (other.acceleration == self.acceleration) and (other.shoot == self.shoot)
     def __add__(self, other):
@@ -48,7 +50,7 @@ class SoccerAction(object):
         self.shoot -= other.shoot
         return self
     def to_dict(self):
-        return {"acceleration":self.acceleration,"shoot":self.shoot}
+        return {"acceleration":self.acceleration,"shoot":self.shoot,"name":self.name}
 
 ###############################################################################
 # Ball
@@ -274,7 +276,7 @@ class SoccerState(object):
 
 
     @classmethod
-    def create_initial_state(cls, nb_players_1=0, nb_players_2=0):
+    def create_initial_state(cls, nb_players_1=0, nb_players_2=0,max_steps=settings.MAX_GAME_STEPS):
         """ Creer un etat initial avec le nombre de joueurs indique
         :param nb_players_1: nombre de joueur de la team 1
         :param nb_players_2: nombre de joueur de la teamp 2
@@ -423,7 +425,9 @@ class SoccerTeam(object):
 class Simulation(object):
     def __init__(self,team1=None,team2=None, max_steps = settings.MAX_GAME_STEPS,state=None,**kwargs):
         self.team1, self.team2 = team1 or SoccerTeam(),team2 or SoccerTeam()
-        self.state = state or SoccerState.create_initial_state(self.team1.nb_players,self.team2.nb_players)
+        if state is None:
+            state = SoccerState.create_initial_state(self.team1.nb_players,self.team2.nb_players,max_steps)
+        self.state = state.copy()
         self.max_steps = max_steps
         self.listeners = SoccerEvents()
         self._thread = None
@@ -446,11 +450,12 @@ class Simulation(object):
         if self.replay:
             return
         self.states = []
-        self.state = self.initial_state.copy()
+        self.state = self.get_initial_state()
         self.error = False
     def to_dict(self):
         return dict(team1=self.team1,team2=self.team2,state=self.state,max_steps=self.max_steps,states=self.states,initial_state=self.initial_state)
-
+    def get_initial_state(self):
+        return self.initial_state.copy()
     def start_thread(self):
         if not self._thread or not self._thread.isAlive():
             self._kill = False
@@ -489,11 +494,12 @@ class Simulation(object):
                     strategies.update(dict([((i,j),s.name) for j,s in enumerate(t.strategies)]))
                 except Exception as e:
                     time.sleep(0.0001)
-                    print(e, traceback.print_exc())
+                    logging.debug(traceback.format_exc())
+                    logging.warning("%s" %(e,))
                     self.state.step=self.max_steps
                     self.state.score[2-i]=100
                     self.error = True
-                    print("Error for team %d -- loose match" % ((i+1),))
+                    logging.warning("Error for team %d -- loose match" % ((i+1),))
                     self.states.append(self.state.copy())
                     return
             self.state.apply_actions(actions,strategies)
@@ -514,7 +520,7 @@ class Simulation(object):
     def begin_round(self):
         if not self.replay:
             score=dict(self.state.score)
-            self.state = self.initial_state.copy()
+            self.state = self.get_initial_state()
             self.state.score = score
             self.state.step = len(self.states)
             self.states.append(self.state.copy())
