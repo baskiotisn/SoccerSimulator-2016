@@ -1,4 +1,4 @@
-Projet cours 2I013 - Projet - UPMC
+UE 2I013 - Projet - UPMC
 ==================================
 
 Le dépôt contient :
