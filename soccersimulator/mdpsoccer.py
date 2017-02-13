@@ -423,18 +423,18 @@ class SoccerTeam(object):
 
 
 class Simulation(object):
-    def __init__(self,team1=None,team2=None, max_steps = settings.MAX_GAME_STEPS,state=None,**kwargs):
+    def __init__(self,team1=None,team2=None, max_steps = settings.MAX_GAME_STEPS,initial_state=None,**kwargs):
         self.team1, self.team2 = team1 or SoccerTeam(),team2 or SoccerTeam()
-        if state is None:
-            state = SoccerState.create_initial_state(self.team1.nb_players,self.team2.nb_players,max_steps)
-        self.state = state.copy()
+        if initial_state is None:
+            initial_state = SoccerState.create_initial_state(self.team1.nb_players,self.team2.nb_players,max_steps)
+        self.state = initial_state.copy()
         self.max_steps = max_steps
         self.listeners = SoccerEvents()
         self._thread = None
         self._on_going = False
         self._thread = None
         self._kill = False
-        self.initial_state = self.state.copy()
+        self.initial_state = initial_state.copy()
         self.states = []
         self.error = False
         self.replay = type(self.team1.strategy(0))==str or type(self.team1.strategy(0)) == unicode
