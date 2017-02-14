@@ -44,7 +44,7 @@ class MyJSONEncoder(json.JSONEncoder):
 
 class MyJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
-        json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+        super(json.JSONDecoder,self).__init__(object_hook=self.object_hook, *args, **kwargs)
     def object_hook(self, obj):
         if '__class__' in obj:
             class_name = obj.pop('__class__')
@@ -298,12 +298,8 @@ class MobileMixin(object):
         :param vitesse: vitesse du mobile (Vector2D)
         :return:
         """
-        if position is None:
-            position = Vector2D()
-        if vitesse is None:
-            vitesse = Vector2D()
-        self._position = position
-        self._vitesse = vitesse
+        self._position = position or Vector2D()
+        self._vitesse = vitesse or Vector2D()
     @property
     def vitesse(self):
         return self._vitesse

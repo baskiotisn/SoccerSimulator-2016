@@ -79,7 +79,7 @@ class Strategy(object):
 class KeyboardStrategy(Strategy):
 
     def __init__(self,name="KBCommande",fn=None,reset=True):
-        Strategy.__init__(self,name)
+        super(Strategy,self).__init__(name)
         self.fn = fn
         self.dic_keys=dict()
         self.cur = None

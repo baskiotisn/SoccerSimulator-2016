@@ -56,8 +56,8 @@ class SoccerAction(object):
 # Ball
 ###############################################################################
 class Ball(MobileMixin):
-    def __init__(self,*args,**kwargs):
-        MobileMixin.__init__(self,*args,**kwargs)
+    def __init__(self,position=None,vitesse=None,**kwargs):
+        super(Ball,self).__init__(position,vitesse,**kwargs)
     def next(self,sum_of_shoots):
         vitesse = self.vitesse.copy()
         vitesse.norm = self.vitesse.norm - settings.ballBrakeSquare * self.vitesse.norm ** 2 - settings.ballBrakeConstant * self.vitesse.norm
@@ -75,7 +75,8 @@ class Ball(MobileMixin):
         self.vitesse = vitesse.norm_max(settings.maxBallAcceleration).copy()
         self.position += self.vitesse
     def inside_goal(self):
-        return (self.position.x <= 0 or self.position.x >= settings.GAME_WIDTH) and abs(self.position.y - (settings.GAME_HEIGHT / 2.)) < settings.GAME_GOAL_HEIGHT / 2.
+        return (self.position.x < 0 or self.position.x > settings.GAME_WIDTH)\
+                and abs(self.position.y - (settings.GAME_HEIGHT / 2.)) < settings.GAME_GOAL_HEIGHT / 2.
     def __repr__(self):
         return "Ball(%s,%s)" % (self.position.__repr__(),self.vitesse.__repr__())
     def __str__(self):
@@ -88,24 +89,24 @@ class Ball(MobileMixin):
 class PlayerState(MobileMixin):
     """ Represente la configuration d'un joueur : un etat  mobile (position, vitesse), et une action SoccerAction
     """
-    def __init__(self, **kwargs):
+    def __init__(self, position=None, vitesse=None,**kwargs):
         """
         :param position: position du  joueur
         :param acceleration: acceleration du joueur
         :param action: action SoccerAction du joueur
         :return:
         """
-        MobileMixin.__init__(self,kwargs.pop('position',Vector2D()),kwargs.pop('vitesse',Vector2D()))
+        super(PlayerState,self).__init__(position,vitesse)
         self.action = kwargs.pop('action', SoccerAction())
         self.last_shoot = kwargs.pop('last_shoot', 0)
         self.__dict__.update(kwargs)
     def to_dict(self):
         return {"position":self.position,"vitesse":self.vitesse,"action":self.action,"last_shoot":self.last_shoot}
     def __str__(self):
-        return "vit: %s, acc:%s, action:%s" %(str(self.position),str(self.acceleration),str(self.action))
+        return "pos: %s, vit: %s, action:%s" %(str(self.position),str(self.acceleration),str(self.action))
     def __repr__(self):
-        return "PlayerState(position=%s,acceleration=%s,action=%s,last_shoot=%d)" %  \
-                            (self.position.__repr__(),self.acceleration.__repr__(),self.action.__repr__(),self.last_shoot)
+        return "PlayerState(position=%s,vitesse=%s,action=%s,last_shoot=%d)" %  \
+                            (self.position.__repr__(),self.vitesse.__repr__(),self.action.__repr__(),self.last_shoot)
     @property
     def acceleration(self):
         """
@@ -132,7 +133,6 @@ class PlayerState(MobileMixin):
         """
         if not (hasattr(action,"acceleration") and hasattr(action,"shoot")):
             action = SoccerAction()
-            #print("Warning : mauvais SoccerAction")
         self.action = action.copy()
         self.vitesse *= (1 - settings.playerBrackConstant)
         self.vitesse = (self.vitesse + self.acceleration).norm_max(settings.maxPlayerSpeed)
@@ -148,7 +148,8 @@ class PlayerState(MobileMixin):
         self._reset_shoot()
         if self.position.distance(ball.position) > (settings.PLAYER_RADIUS + settings.BALL_RADIUS):
             return Vector2D()
-        return self._rd_angle(self.shoot,(self.vitesse.angle-self.shoot.angle),self.position.distance(ball.position)/(settings.PLAYER_RADIUS+settings.BALL_RADIUS))
+        return self._rd_angle(self.shoot,(self.vitesse.angle-self.shoot.angle)*(0 if self.vitesse.norm==0 else 1),\
+                    self.position.distance(ball.position)/(settings.PLAYER_RADIUS+settings.BALL_RADIUS))
     @staticmethod
     def _rd_angle(shoot,dangle,dist):
         eliss = lambda x, alpha: (math.exp(alpha*x)-1)/(math.exp(alpha)-1)
@@ -180,10 +181,10 @@ class SoccerState(object):
     """ Etat d'un tour du jeu. Contient la balle, l'ensemble des etats des joueurs, le score et
     le numero de l'etat.
     """
-    def __init__(self, **kwargs):
-        self.states = kwargs.pop('states', dict())
+    def __init__(self,states=None,ball=None,**kwargs):
+        self.states = states or dict()
+        self.ball = ball or Ball()
         self.strategies = kwargs.pop('strategies',dict())
-        self.ball = kwargs.pop('ball', Ball())
         self.score = kwargs.pop('score', {1: 0, 2: 0})
         self.step = kwargs.pop('step', 0)
         self.max_steps = kwargs.pop('max_steps', settings.MAX_GAME_STEPS)
@@ -219,7 +220,7 @@ class SoccerState(object):
 
     def nb_players(self, team):
         """ nombre de joueurs de la team team
-        :param team: 1 ou 2prit fauve
+        :param team: 1 ou 2
         :return:
         """
         return len([x for x in self.states.keys() if x[0] == team])
@@ -241,7 +242,6 @@ class SoccerState(object):
 
     def copy(self):
         return deepcopy(self)
-
 
     def apply_actions(self, actions=None,strategies=None):
         if strategies: self.strategies.update(strategies)
@@ -269,11 +269,9 @@ class SoccerState(object):
             self.ball.position.y = 2 * settings.GAME_HEIGHT - self.ball.position.y
             self.ball.vitesse.y = -self.ball.vitesse.y
 
-
     def _do_goal(self, idx):
         self.score[idx]+=1
         self.goal = idx
-
 
     @classmethod
     def create_initial_state(cls, nb_players_1=0, nb_players_2=0,max_steps=settings.MAX_GAME_STEPS):
@@ -355,7 +353,6 @@ class SoccerTeam(object):
         :return:
         """
         self.name, self.players, self.login = name or "", players or [], login or ""
-
     def to_dict(self):
         return {"name":self.name,"players":self.players,"login":self.login}
     def __iter__(self):
@@ -375,28 +372,24 @@ class SoccerTeam(object):
         :return: liste des noms des joueurs de l'equipe
         """
         return [x.name for x in self.players]
-
     def player_name(self, idx):
         """
         :param idx: numero du joueur
         :return: nom du joueur
         """
         return self.players[idx].name
-
     @property
     def strategies(self):
         """
         :return: liste des strategies des joueurs
         """
         return [x.strategy for x in self.players]
-
     def strategy(self, idx):
         """
         :param idx: numero du joueur
         :return: strategie du joueur
         """
         return self.players[idx].strategy
-
     def compute_strategies(self, state, id_team):
         """ calcule les actions de tous les joueurs
         :param state: etat courant
@@ -425,16 +418,14 @@ class SoccerTeam(object):
 class Simulation(object):
     def __init__(self,team1=None,team2=None, max_steps = settings.MAX_GAME_STEPS,initial_state=None,**kwargs):
         self.team1, self.team2 = team1 or SoccerTeam(),team2 or SoccerTeam()
-        if initial_state is None:
-            initial_state = SoccerState.create_initial_state(self.team1.nb_players,self.team2.nb_players,max_steps)
-        self.state = initial_state.copy()
+        self.initial_state = initial_state or  SoccerState.create_initial_state(self.team1.nb_players,self.team2.nb_players,max_steps)
+        self.state = self.initial_state.copy()
         self.max_steps = max_steps
         self.listeners = SoccerEvents()
         self._thread = None
         self._on_going = False
         self._thread = None
         self._kill = False
-        self.initial_state = initial_state.copy()
         self.states = []
         self.error = False
         self.replay = type(self.team1.strategy(0))==str or type(self.team1.strategy(0)) == unicode
@@ -505,9 +496,6 @@ class Simulation(object):
             self.state.apply_actions(actions,strategies)
             self.states.append(self.state.copy())
         self.update_round()
-        if self.state.goal > 0:
-            self.end_round()
-            self.begin_round()
     def get_team(self,idx):
         if idx==1:
             return self.team1
@@ -516,23 +504,29 @@ class Simulation(object):
     def stop(self):
         return self._kill or self.state.step >= self.max_steps or (self.replay and self.step+1>=len(self.states))
     def update_round(self):
-        self.listeners.update_round(self.team1,self.team2,self.state)
+        self.listeners.update_round(self.team1,self.team2,self.state.copy())
+        if self.state.goal > 0:
+            self.end_round()
     def begin_round(self):
         if not self.replay:
             score=dict(self.state.score)
             self.state = self.get_initial_state()
             self.state.score = score
             self.state.step = len(self.states)
+            self.listeners.begin_round(self.team1,self.team2,self.state.copy())
+            self.state.score = score
+            self.state.step = len(self.states)
             self.states.append(self.state.copy())
-        self.listeners.begin_round(self.team1,self.team2,self.state)
+        self.listeners.begin_round(self.team1,self.team2,self.state.copy())
     def end_round(self):
-        self.listeners.end_round(self.team1, self.team2, self.state)
+        self.listeners.end_round(self.team1, self.team2, self.state.copy())
+        self.begin_round()
     def begin_match(self):
         self._on_going = True
-        self.listeners.begin_match(self.team1,self.team2,self.state)
+        self.listeners.begin_match(self.team1,self.team2,self.state.copy())
         self.begin_round()
     def end_match(self):
-        self.listeners.end_match(self.team1,self.team2,self.state)
+        self.listeners.end_match(self.team1,self.team2,self.state.copy())
         self.replay = True
     def send_strategy(self,key):
         self.listeners.send_strategy(key)
