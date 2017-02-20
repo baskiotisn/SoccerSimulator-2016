@@ -224,9 +224,14 @@ class SimuGUI(pyglet.window.Window):
 
     def get_max_steps(self):
         try:
+            return self.max_steps
+        except Exception:
+            pass
+        try:
             return self.state.max_steps
         except Exception:
-            return settings.MAX_GAME_STEPS
+            pass
+        return settings.MAX_GAME_STEPS
 
     def update_round(self, team1, team2, state):
         self.change_state(state)

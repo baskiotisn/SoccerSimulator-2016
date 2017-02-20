@@ -181,6 +181,13 @@ class SoccerTournament(object):
                     % (i,self.teams[i].name, self.teams[i].login, str(score)) for score, i in sc]
         return "\033[93m***\033[0m \033[95m Resultats pour le tournoi \033[92m%d joueurs\033[0m : \033[93m***\33[0m \n\t%s\n\n" % \
                (self.nb_teams, "\n\t".join(res))
+    def format_scores_latex(self,with_id=True):
+        sc = sorted([(score, i) for i,score  in self.scores.items()], reverse=True)
+        res = ["\\rowcolor{%s} %s (%s) & %d & (%d,%d,%d) & (%d,%d)\\\\" \
+            % ("lg" if j%2==0 else "hg", self.teams[i].name, self.teams[i].login,score.points,score.win,\
+               score.draw,score.loose,score.gf,score.ga) for j,(score, i) in enumerate(sc)]
+        return  "\n".join(res)
+
     def print_scores(self,with_id=False):
         print(self.format_scores(with_id))
     def __str__(self):

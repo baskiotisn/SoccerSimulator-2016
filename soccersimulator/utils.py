@@ -44,7 +44,7 @@ class MyJSONEncoder(json.JSONEncoder):
 
 class MyJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
-        super(json.JSONDecoder,self).__init__(object_hook=self.object_hook, *args, **kwargs)
+        super(MyJSONDecoder,self).__init__(object_hook=self.object_hook, *args, **kwargs)
     def object_hook(self, obj):
         if '__class__' in obj:
             class_name = obj.pop('__class__')

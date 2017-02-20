@@ -421,6 +421,7 @@ class Simulation(object):
         self.initial_state = initial_state or  SoccerState.create_initial_state(self.team1.nb_players,self.team2.nb_players,max_steps)
         self.state = self.initial_state.copy()
         self.max_steps = max_steps
+        self.state.max_steps = self.initial_state.max_steps =  max_steps
         self.listeners = SoccerEvents()
         self._thread = None
         self._on_going = False
@@ -454,7 +455,11 @@ class Simulation(object):
             self._thread.start()
     def kill(self):
         self._kill = True
-
+    def set_state(self,state):
+        state.score = self.state.score
+        self.state = state
+        self.state.max_steps = self.max_steps
+        self.state.step = len(self.states)
     def start(self):
         if self._on_going:
             return
@@ -469,6 +474,7 @@ class Simulation(object):
     @property
     def step(self):
         return self.state.step
+
     def get_score_team(self,i):
         return self.state.get_score_team(i)
     def next_step(self):
@@ -510,12 +516,8 @@ class Simulation(object):
     def begin_round(self):
         if not self.replay:
             score=dict(self.state.score)
-            self.state = self.get_initial_state()
-            self.state.score = score
-            self.state.step = len(self.states)
+            self.set_state(self.get_initial_state())
             self.listeners.begin_round(self.team1,self.team2,self.state.copy())
-            self.state.score = score
-            self.state.step = len(self.states)
             self.states.append(self.state.copy())
         self.listeners.begin_round(self.team1,self.team2,self.state.copy())
     def end_round(self):
