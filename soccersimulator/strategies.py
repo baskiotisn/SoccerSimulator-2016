@@ -110,6 +110,3 @@ class KeyboardStrategy(Strategy):
     def begin_match(self,team1,team2,state):
         if self.reset:
             self.states=[]
-
-    def write_json(fn):
-        dump_jsonz(fn,self.states)
