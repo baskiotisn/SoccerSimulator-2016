@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from .mdpsoccer import SoccerAction
-from .utils import Vector2D
+from .utils import Vector2D,dump_jsonz
 ##############################################################################
 # SoccerStrategy
 ##############################################################################
@@ -77,16 +77,15 @@ class Strategy(object):
 
 class KeyboardStrategy(Strategy):
 
-    def __init__(self,name="KBCommande",fn=None):
-        super(Strategy,self).__init__(name)
-        self.fn = fn
+    def __init__(self,name="KBCommande",reset=False):
+        super(KeyboardStrategy,self).__init__(name)
         self.dic_keys=dict()
         self.cur = None
         self.states=[]
         self.state=None
         self.idt = 1
         self.idp = 0
-        self.reset = False
+        self.reset = reset
 
     def add(self,key,strategy):
         self.dic_keys[key]=strategy
@@ -112,13 +111,5 @@ class KeyboardStrategy(Strategy):
         if self.reset:
             self.states=[]
 
-    def write(self,fn=None,append = True):
-        mode = "w"
-        if append:
-            mode = "a"
-        if not fn:
-            fn = self.fn
-        if not fn:
-            return
-        with open(fn,mode) as f:
-            f.write(self.to_str()+"\n")
+    def write_json(fn):
+        dump_jsonz(fn,self.states)
