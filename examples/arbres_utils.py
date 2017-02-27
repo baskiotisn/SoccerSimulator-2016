@@ -1,12 +1,12 @@
 from soccersimulator import Strategy
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree 	import export_graphviz
 import logging
 import sklearn
 logger = logging.getLogger("arbrestrategie")
 
-if sklearn.__version__ != "0.18.1":
-    print("Updater sklearn !! (pip install -U sklearn --user )")
+assert sklearn.__version__ == "0.18.1","Updater sklearn !! (pip install -U sklearn --user )"
 
 
 def build_apprentissage(states_tuple,get_features):
@@ -17,6 +17,11 @@ def build_apprentissage(states_tuple,get_features):
         labels.append(info[2])
     """ transformation en matrice numpy """
     return np.array(res),np.array(labels)
+
+def apprend_arbre(train,labels,depth=10,min_samples_leaf=2,min_samples_split=2):
+    tree = DecisionTreeClassifier(max_depth=depth,min_samples_leaf=min_samples_leaf,min_samples_split=min_samples_split)
+    tree.fit(train,labels)
+    return tree
 
 def affiche_arbre(tree):
     long = 10
@@ -32,7 +37,10 @@ def affiche_arbre(tree):
                     tree.tree_.feature[node],tree.tree_.threshold[node],aux(tree.tree_.children_right[node],sep+sepr))
     return aux(0,"")
 
-
+def genere_dot(tree,fn):
+    with file(fn,"w") as f:
+            export_graphviz(tree,f,class_names = tree.classes_,feature_names=getattr(tree,"feature_names",None), filled = True,rounded=True)
+    print("Use dot -Tpdf %s %s.pdf to generate pdf" % (fn,fn[:-3]))
 
 
 class DTreeStrategy(Strategy):
