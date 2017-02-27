@@ -526,9 +526,11 @@ class Simulation(object):
         self.begin_round()
     def begin_match(self):
         self._on_going = True
+        self._kill = False
         self.listeners.begin_match(self.team1,self.team2,self.state.copy())
         self.begin_round()
     def end_match(self):
+        self._kill = True
         self.listeners.end_match(self.team1,self.team2,self.state.copy())
         self.replay = True
     def send_strategy(self,key):
