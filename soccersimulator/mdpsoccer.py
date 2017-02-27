@@ -523,7 +523,8 @@ class Simulation(object):
         self.listeners.begin_round(self.team1,self.team2,self.state.copy())
     def end_round(self):
         self.listeners.end_round(self.team1, self.team2, self.state.copy())
-        self.begin_round()
+        if not self.stop():
+            self.begin_round()
     def begin_match(self):
         self._on_going = True
         self._kill = False
