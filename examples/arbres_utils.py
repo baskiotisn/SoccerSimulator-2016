@@ -37,7 +37,7 @@ def affiche_arbre(tree):
 
 class DTreeStrategy(Strategy):
     def __init__(self,tree,dic,get_features):
-        super(DTreeStrategy,self).__init__(self,"Tree Strategy")
+        super(DTreeStrategy,self).__init__("Tree Strategy")
         self.dic = dic
         self.tree = tree
         self.get_features= get_features
