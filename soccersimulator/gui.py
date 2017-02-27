@@ -14,7 +14,7 @@ from .guisettings import *
 
 FPS = 50.
 FPS_MOD = 5.
-
+logger = logging.getLogger("soccersimulator.gui")
 
 class SimuGUI(pyglet.window.Window):
     AUTO = 0
@@ -133,7 +133,7 @@ class SimuGUI(pyglet.window.Window):
                 self.hud.draw()
         except Exception as e:
             time.sleep(0.0001)
-            logging.exception(e, traceback.format_exc())
+            logger.error("%s\n\t%s" %(e, traceback.format_exc()))
             raise e
 
     def _increase_fps(self):
@@ -173,7 +173,7 @@ class SimuGUI(pyglet.window.Window):
             gl.glLoadIdentity()
         except Exception as e:
             time.sleep(0.0001)
-            logging.exception(e, traceback.format_exc())
+            logger.error("%s\n\t%s"  %(e, traceback.format_exc()))
 
     def on_close(self):
         pyglet.window.Window.on_close(self)

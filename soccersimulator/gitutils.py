@@ -9,6 +9,8 @@ import traceback
 import logging
 from soccersimulator import SoccerTeam, Strategy, Simulation
 
+logger = logging.getLogger("soccersimulator.gitutils")
+
 MAX_TEST_STEPS = 50
 Groupe = namedtuple("Groupe",["login","projet","noms"])
 
@@ -16,7 +18,7 @@ def dl_from_github(groupe, path):
     if type(groupe)==list:
         for g in groupe: dl_from_github(g,path)
         return
-    logging.info("Debut import github %s %s" % (groupe.login, groupe.projet))
+    logger.info("Debut import github %s %s" % (groupe.login, groupe.projet))
     if not os.path.exists(path):
         os.mkdir(path)
     tmp_path = os.path.join(path, groupe.login)
@@ -46,41 +48,41 @@ def check_team(team):
 def load_teams(path,login,nbps):
     mymod = None
     if not os.path.exists(os.path.join(path,login,"__init__.py")):
-        logging.info("\033[93m Erreur pour \033[94m%s : \033[91m%s \033[0m" % (login, "__init__.py non trouve"))
+        logger.info("\033[93m Erreur pour \033[94m%s : \033[91m%s \033[0m" % (login, "__init__.py non trouve"))
         return None
     try:
         sys.path.insert(0, path)
         mymod = __import__(login)
     except Exception as e:
-        logging.debug(traceback.format_exc())
-        logging.info("\033[93m Erreur pour \033[94m%s : \033[91m%s \033[0m" % (login, e))
+        logger.debug(traceback.format_exc())
+        logger.info("\033[93m Erreur pour \033[94m%s : \033[91m%s \033[0m" % (login, e))
     finally:
         del sys.path[0]
     if mymod is None:
         return None
     teams = dict()
     if not hasattr(mymod,"get_team"):
-        logging.info("\033[93m Pas de get_team pour \033[94m%s\033[0m" % (login,))
+        logger.info("\033[93m Pas de get_team pour \033[94m%s\033[0m" % (login,))
         return teams
     for nbp in nbps:
         try:
             tmpteam = mymod.get_team(nbp)
             if tmpteam is None or not hasattr(tmpteam,"nb_players"):
-                logging.info("\033[93m Pas d'equipe a %d joueurs pour \033[94m%s\033[0m" % (nbp,login))
+                logger.info("\033[93m Pas d'equipe a %d joueurs pour \033[94m%s\033[0m" % (nbp,login))
                 continue
             if tmpteam.nb_players != nbp:
-                logging.info("\033[93m Erreur pour \033[94m%s : \033[0m mauvais nombre de joueurs (%d au lieu de %d)"\
+                logger.info("\033[93m Erreur pour \033[94m%s : \033[0m mauvais nombre de joueurs (%d au lieu de %d)"\
                     % (login, tmpteam.nb_players, nbp))
                 continue
             if not check_team(tmpteam):
-                logging.info("\033[93m Error for \033[91m(%s,%d)\033[0m" % (login,nbp))
+                logger.info("\033[93m Error for \033[91m(%s,%d)\033[0m" % (login,nbp))
                 continue
             tmpteam.login = login
             teams[nbp] = (tmpteam,mymod.get_team)
         except Exception as e:
-            logging.debug(traceback.format_exc())
-            logging.info("\033[93m Erreur pour \033[94m%s: \033[91m%s \033[0m" % (login,e))
-    logging.info("Equipes de \033[92m%s\033[0m charge, \033[92m%s equipes\033[0m" % (login, len(teams)))
+            logger.debug(traceback.format_exc())
+            logger.info("\033[93m Erreur pour \033[94m%s: \033[91m%s \033[0m" % (login,e))
+    logger.info("Equipes de \033[92m%s\033[0m charge, \033[92m%s equipes\033[0m" % (login, len(teams)))
     return teams
 
 

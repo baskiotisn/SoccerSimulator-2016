@@ -14,6 +14,7 @@ import zipfile
 import traceback
 import logging
 
+logger = logging.getLogger("soccersimulator.mdpsoccer")
 ###############################################################################
 # SoccerAction
 ###############################################################################
@@ -491,12 +492,12 @@ class Simulation(object):
                     strategies.update(dict([((i,j),s.name) for j,s in enumerate(t.strategies)]))
                 except Exception as e:
                     time.sleep(0.0001)
-                    logging.debug(traceback.format_exc())
-                    logging.warning("%s" %(e,))
+                    logger.debug("%s" % (traceback.format_exc(),))
+                    logger.warning("%s" %(e,))
                     self.state.step=self.max_steps
                     self.state.score[2-i]=100
                     self.error = True
-                    logging.warning("Error for team %d -- loose match" % ((i+1),))
+                    logger.warning("Error for team %d -- loose match" % ((i+1),))
                     self.states.append(self.state.copy())
                     return
             self.state.apply_actions(actions,strategies)

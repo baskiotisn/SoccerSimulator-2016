@@ -15,7 +15,6 @@ class Strategy(object):
         :return:
         """
         self.name = name
-
     def compute_strategy(self, state, id_team, id_player):
         """ Fonction a implementer pour toute strategie
         :param state: un objet SoccerState
@@ -78,13 +77,16 @@ class Strategy(object):
 
 class KeyboardStrategy(Strategy):
 
-    def __init__(self,name="KBCommande",fn=None,reset=True):
+    def __init__(self,name="KBCommande",fn=None):
         super(Strategy,self).__init__(name)
         self.fn = fn
         self.dic_keys=dict()
         self.cur = None
         self.states=[]
         self.state=None
+        self.idt = 1
+        self.idp = 0
+        self.reset = False
 
     def add(self,key,strategy):
         self.dic_keys[key]=strategy
@@ -94,26 +96,21 @@ class KeyboardStrategy(Strategy):
 
     def compute_strategy(self,state,id_team,id_player):
         self.state = state
+        self.idt = id_team
+        self.idp = id_player
         return self.dic_keys[self.cur].compute_strategy(state,id_team,id_player)
 
-    def listen(self,key,teamid,player):
+    def send_strategy(self,key):
         if not self.state:
             return
         if key in self.dic_keys.keys():
             self.cur=key
             self.name = self.dic_keys[self.cur].name
-            self.states.append((self.state, (teamid,player,self.name)))
+            self.states.append((self.state, (self.idt,self.idp,self.name)))
 
     def begin_match(self,team1,team2,state):
         if self.reset:
             self.states=[]
-
-    def end_match(self, team1, team2, state):
-        self.write()
-
-    def to_str(self):
-        ### A REFAIRE #####
-        return "\n".join("%d,%d,%s|%s" % (k[0],k[1],k[2],s.to_str()) for s,k in self.states)
 
     def write(self,fn=None,append = True):
         mode = "w"
@@ -125,17 +122,3 @@ class KeyboardStrategy(Strategy):
             return
         with open(fn,mode) as f:
             f.write(self.to_str()+"\n")
-
-    @classmethod
-    def from_str(cls,strg):
-        res = []
-        for l in strg.split("\n") :
-            if len(l):
-                info=l[:l.index("|")].split(",")
-                state=l[l.index("|")+1:]
-                res.append(((int(info[0]),int(info[1]),info[2]),SoccerState.from_str(state)))
-        return res
-    @classmethod
-    def read(cls,fn):
-        with open(fn) as f:
-            return cls.from_str(f.read())

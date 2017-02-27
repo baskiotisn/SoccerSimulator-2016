@@ -11,7 +11,7 @@ import logging
 ###############################################################################
 # Tournament
 ###############################################################################
-
+logger = logging.getLogger("soccersimulator.matches")
 
 @total_ordering
 class Score(object):
@@ -204,7 +204,7 @@ class SoccerTournament(object):
         self.listeners.end_round(*args, **kwargs)
 
     def begin_match(self, *args, **kwargs):
-        logging.info("\033[33mDebut match : \033[0m%d/%d : \033[94m%s (%s) \033[0mvs \033[94m%s (%s)\033[0m" % (len(self.played)+1, self.nb_matches,
+        logger.info("\033[33mDebut match : \033[0m%d/%d : \033[94m%s (%s) \033[0mvs \033[94m%s (%s)\033[0m" % (len(self.played)+1, self.nb_matches,
                                                     self.cur_match.get_team(1).name,self.cur_match.get_team(1).login,
                                                     self.cur_match.get_team(2).name,self.cur_match.get_team(2).login))
         self.listeners.begin_match(*args, **kwargs)
@@ -221,7 +221,7 @@ class SoccerTournament(object):
         if self.cur_match.get_score_team(1)<self.cur_match.get_score_team(2):
             cm1 = "\033[91m"
             cm2 = "\033[92m"
-        logging.info("\033[93mResultat : %s%s (%s) \033[0mvs %s%s (%s) : %s%d - %s%d\033[0m" % \
+        logger.info("\033[93mResultat : %s%s (%s) \033[0mvs %s%s (%s) : %s%d - %s%d\033[0m" % \
             (cm1,self.cur_match.get_team(1).name, self.cur_match.get_team(1).login,\
               cm2,self.cur_match.get_team(2).name, self.cur_match.get_team(2).login, \
             cm1,self.cur_match.get_score_team(1),cm2, self.cur_match.get_score_team(2)))

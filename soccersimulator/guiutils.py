@@ -9,6 +9,7 @@ import traceback
 import logging
 from .guisettings import *
 
+logger = logging.getLogger("soccersimulator.gui")
 
 def minmax(x, mi=0, ma=1):
     return max(mi, min(ma, x))
@@ -46,7 +47,7 @@ class ObjectSprite(MobileMixin):
                 p.draw()
         except Exception as e:
             time.sleep(0.0001)
-            logging.exception(e, traceback.format_exc())
+            logger.error("%s\n\t%s" % (e, traceback.format_exc()))
         finally:
             gl.glPopMatrix()
 
@@ -140,7 +141,7 @@ class TextSprite(object):
         try:
             self._label = pyglet.text.Label(text, color=color, font_name="Arial", font_size=40)
         except Exception as e:
-            logging.exception(e, traceback.format_exc())
+            logger.error("%s\n\t%s" % (e, traceback.format_exc()))
             time.sleep(0.0001)
             raise e
         self.scale = scale
@@ -154,7 +155,7 @@ class TextSprite(object):
             gl.glScalef(self.scale, self.scale, 1)
             self._label.draw()
         except Exception as e:
-            logging.exception(e, traceback.format_exc())
+            logger.error("%s\n\t%s" % (e, traceback.format_exc()))
             time.sleep(0.0001)
             raise e
         finally:
