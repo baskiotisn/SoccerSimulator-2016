@@ -40,7 +40,7 @@ def affiche_arbre(tree):
 def genere_dot(tree,fn):
     with file(fn,"w") as f:
             export_graphviz(tree,f,class_names = tree.classes_,feature_names=getattr(tree,"feature_names",None), filled = True,rounded=True)
-    print("Use dot -Tpdf %s %s.pdf to generate pdf" % (fn,fn[:-3]))
+    print('Use "dot -Tpdf %s -o %s.pdf" to generate pdf' % (fn,fn[:-3]))
 
 
 class DTreeStrategy(Strategy):
