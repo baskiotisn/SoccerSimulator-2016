@@ -1,4 +1,4 @@
-from soccersimulator import Strategy
+from soccersimulator import Strategy,SoccerAction
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.tree 	import export_graphviz

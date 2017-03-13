@@ -27,8 +27,8 @@ class ShootSearch(object):
         team2.add("Nothing",Strategy())
         self.simu = Simulation(team1,team2,max_steps=1000000)
         self.simu.listeners+=self
-        self.discr_step = 10
-        self.nb_essais = 10
+        self.discr_step = 20
+        self.nb_essais = 20
     def start(self,visu=True):
         """ demarre la visualisation avec ou sans affichage"""
         if visu :
