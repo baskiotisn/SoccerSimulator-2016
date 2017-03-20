@@ -4,6 +4,7 @@ import logging
 from arbres_utils import build_apprentissage,affiche_arbre,DTreeStrategy,apprend_arbre,genere_dot
 from sklearn.tree 	import export_graphviz
 from sklearn.tree import DecisionTreeClassifier
+import pickle
 import os.path
 ## Strategie aleatoire
 class FonceStrategy(Strategy):
@@ -20,7 +21,7 @@ class StaticStrategy(Strategy):
         return SoccerAction()
 
 #######
-## Constructioon des equipes
+## Construction des equipes
 #######
 
 team1 = SoccerTeam("team1")
@@ -60,16 +61,20 @@ def apprentissage(fn):
     dt = apprend_arbre(data_train,data_labels,depth=10)
     # Visualisation de l'arbre
     affiche_arbre(dt)
-    genere_dot(dt,"test_arbre.dot")
+    genere_dot(dt,"test_")
+    #sauvegarde d'un arbre 
+    pickle.dump(dt,open("tree.pkl","wb"))
     return dt
 
-def jouer_arbre(dt):
+def jouer_arbre():
     ####
     # Utilisation de l'arbre
     ###
+    #charger un arbre
+    dtree = pickle.load(open(os.path.join(os.path.dirname(__file__),"tree.pkl"),"rb"))
     dic = {"Fonce":FonceStrategy(),"Static":StaticStrategy()}
-    treeStrat1 = DTreeStrategy(dt,dic,my_get_features)
-    treeStrat2 = DTreeStrategy(dt,dic,my_get_features)
+    treeStrat1 = DTreeStrategy(dtree,dic,my_get_features)
+    treeStrat2 = DTreeStrategy(dtree,dic,my_get_features)
     team3 = SoccerTeam("Arbre Team")
     team3.add("Joueur 1",treeStrat1)
     team3.add("Joueur 2",treeStrat2)
@@ -81,4 +86,4 @@ if __name__=="__main__":
     if not os.path.isfile(fn):
         entrainement(fn)
     dt = apprentissage(fn)
-    jouer_arbre(dt)
+    jouer_arbre()
