@@ -131,6 +131,9 @@ def get_panel_prims():
                  (settings.GAME_WIDTH + PANEL_WIDTH, 0), (settings.GAME_WIDTH, 0)], PANEL_BKG_COLOR)
         return [panel]
 
+def get_rec_prims(l,color):
+    prims = Primitive2DGL([(0,0),(l,0),(l,l),(0,l)],color)
+    return [prims]
 
 class TextSprite(object):
     def __init__(self, text="", position=None, color=None, scale=0.1):
@@ -181,6 +184,13 @@ class BallSprite(ObjectSprite):
         ObjectSprite.__init__(self)
         self.add_primitives(get_ball_prims())
 
+class RectSprite(ObjectSprite):
+    def __init__(self,l,color):
+        ObjectSprite.__init__(self)
+        self.l=l
+        self.add_primitives(get_rec_prims(self.l,color))
+    def set_color(self,color):
+        self.primitives[0].color=color
 
 class BackgroundSprite(ObjectSprite):
     def __init__(self):

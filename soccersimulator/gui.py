@@ -93,7 +93,12 @@ class SimuGUI(pyglet.window.Window):
             else:
                 name_p = self.get_team(k).player_name(v)
             self._sprites[(k, v)] = PlayerSprite(name_p, color=TEAM1_COLOR if k == 1 else TEAM2_COLOR)
-
+        if hasattr(self.state,"zones_1"):
+            for i,z in enumerate(self.state.zones_1):
+                self._sprites[(i,"z1")]=RectSprite(z.l, GREEN_COLOR if self.state.zones_1_bool[i] else RED_COLOR)
+        if hasattr(self.state,"zones_2"):
+            for i,z in enumerate(self.state.zones_2):
+                self._sprites[(i,"z2")]=RectSprite(z.l, GREEN_COLOR if self.state.zones_2_bool[i] else RED2_COLOR)
     def _update_sprites(self):
         team1 = team2 = ongoing = ""
         if not self.state:
@@ -109,6 +114,14 @@ class SimuGUI(pyglet.window.Window):
         for k in self.state.players:
             self._sprites[k].position = self.state.player_state(k[0], k[1]).position
             self._sprites[k].vitesse= self.state.player_state(k[0], k[1]).vitesse
+        if hasattr(self.state,"zones_1"):
+            for i,z in enumerate(self.state.zones_1):
+                self._sprites[(i,"z1")].position=z.position
+                self._sprites[(i,"z1")].set_color( GREEN_COLOR if self.state.zones_1_bool[i] else RED_COLOR)
+        if hasattr(self.state,"zones_2"):
+            for i,z in enumerate(self.state.zones_2):
+                self._sprites[(i,"z2")].position=z.position
+                self._sprites[(i,"z2")].set_color( GREEN_COLOR if self.state.zones_2_bool[i] else RED2_COLOR)
         self._sprites["ball"].position = self.state.ball.position
         self._sprites["ball"].vitesse = self.state.ball.vitesse
 

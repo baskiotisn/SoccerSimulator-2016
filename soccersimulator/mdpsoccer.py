@@ -282,7 +282,7 @@ class SoccerState(object):
         :return:
         """
         state = cls()
-        state.reset_state(nb_players_1, nb_players_2)
+        state.reset_state(nb_players_1=nb_players_1,nb_players_2= nb_players_2)
         return state
 
     def reset_state(self, nb_players_1=0, nb_players_2=0):
