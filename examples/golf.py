@@ -12,7 +12,7 @@ class DemoStrategy(Strategy):
     def compute_strategy(self,state,id_team,id_player):
         """ zones : liste des zones restantes a valider """
         zones = state.get_zones(id_team)
-        if len(z)==0:
+        if len(zones)==0:
             """ shooter au but """
             return SoccerAction(state.ball.position-state.player_state(id_team,id_player).position,\
                     Vector2D((2-id_team)*settings.GAME_WIDTH,settings.GAME_HEIGHT/2.)-state.ball.position)
@@ -20,7 +20,7 @@ class DemoStrategy(Strategy):
             centre du carre : zone.position+Vector2D(z.l/2.,z.l/2.)
             zone.dedans(point) : teste si le point est dans la zone
         """
-        zone = z[0]
+        zone = zones[0]
         """ si la ball est dans une zone a valider """
         if zone.dedans(state.ball.position):
             return SoccerAction()
@@ -30,8 +30,8 @@ class DemoStrategy(Strategy):
 
 team1 = SoccerTeam()
 team2 = SoccerTeam()
-team1.add("John",FonceStrategy())
-team2.add("John",FonceStrategy())
+team1.add("John",DemoStrategy())
+team2.add("John",DemoStrategy())
 simu = Parcours1(team1=team1,vitesse=GOLF)
 show_simu(simu)
 simu = Parcours2(team1=team1,vitesse=GOLF)
