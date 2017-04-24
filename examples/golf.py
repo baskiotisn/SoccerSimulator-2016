@@ -25,7 +25,7 @@ class DemoStrategy(Strategy):
         if zone.dedans(state.ball.position):
             return SoccerAction()
         """ sinon """
-        distance = state.player_state(id_team,id_player).position.distance(zone.position+Vector2D(zone.l,zone.l))
+        distance = state.player_state(id_team,id_player).position.distance(zone.position+zone.l/2.)
         return SoccerAction()
 
 team1 = SoccerTeam()
